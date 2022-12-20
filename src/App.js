@@ -1,41 +1,44 @@
-
-import React, { useState } from "react";
+import React, { useEffect } from "react";
+import Sidebar from "./Sidebar";
 import "./App.css";
-import Chat from "./components/Chat";
-import Register from "./components/Register";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { LoginContext } from "./components/LoginContext";
-import Login from "./components/Login"
-import Sidebar from "./components/Sidebar";
+import Chat from "./Chat";
+import Login from "./Login";
+import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
+import { useStateValue } from "./StateProvider";
+import { auth } from "./firebase";
 
-export default function App() {
-  const [userLogin, setUserLogin] = useState(false);
-  const [userName, setUserName] = useState("");
+function App() {
+  const [{ user }, dispatch] = useStateValue();
+  console.log(user);
+  useEffect(() => {
+    auth.onAuthStateChanged((user) => {
+      dispatch({
+        type: "SET_USER",
+        user: user,
+      });
+    });
+  }, []);
   return (
-    <BrowserRouter>
-      <div className="app">
-        <LoginContext.Provider value={{ setUserLogin, setUserName }}>
-          {!userLogin ? (
-            <div className="register_login">
-              <Routes>
-                <Route path="/" element={<Register />}></Route>
-                <Route path="/login" element={<Login />}></Route>
-              </Routes>
+    <Router>
+      <Switch>
+        {!user ? (
+          <Login />
+        ) : (
+          <div className="App">
+            <div className="app_body">
+              <Sidebar />
+              <Route exact path="/">
+                <Chat />
+              </Route>
+              <Route path="/room/:roomId">
+                <Chat />
+              </Route>
             </div>
-          ) : (
-            <div className="appBody">
-              <Sidebar userName={userName} />
-              <Routes>
-                <Route path="/" element={<Chat userName={userName} />}></Route>
-                <Route
-                  path="/group/:groupId"
-                  element={<Chat userName={userName} />}
-                ></Route>
-              </Routes>
-            </div>
-          )}
-        </LoginContext.Provider>
-      </div>
-    </BrowserRouter>
+          </div>
+        )}
+      </Switch>
+    </Router>
   );
 }
+
+export default App;
